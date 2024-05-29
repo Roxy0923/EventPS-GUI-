@@ -1,0 +1,50 @@
+[package]
+name = "event_ps"
+links = "event_ps"
+version = "0.0.1"
+edition = "2021"
+resolver = "2"
+
+[profile.release]
+lto = "thin"
+panic = "abort"
+# strip = "symbols"
+
+[dependencies]
+ctrlc = "3"
+ocl = "0.19"
+fastrand = "2"
+numpy = "0.20"
+tracing = "0.1"
+ndarray = "0.15"
+nalgebra = "0.32"
+aho-corasick = "1"
+configparser = "3"
+itertools = "0.12"
+parking_lot = "0.12"
+tracing-panic = "0.1"
+crossbeam-channel = "0.5"
+clap = { version = "4", features = ["derive"] }
+anyhow = { version = "1", features = ["backtrace"] }
+pyo3 = { version = "0.20", features = ["auto-initialize"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+libredr-common = { version = "0.0.16", default-features = false }
+cxx = { version = "1", optional = true }
+gl = { version = "0.14", optional = true }
+xz2 = { version = "0.1", optional = true }
+glfw = { version = "0.54", optional = true }
+opencv = {version = "0.85", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+rav1e = { version = "0.7", default-features = false, features = ["asm", "threading"], optional = true }
+cv-convert = {version = "0.25", default-features = false, features = ["opencv_0-85", "ndarray_0-15"], optional = true }
+libredr-client = { version = "0.0.16", default-features = false, optional = true }
+
+[build-dependencies]
+cxx-build = { version = "1", optional = true }
+pkg-config = { version = "0.3", optional = true }
+
+[features]
+display_gl = ["glfw", "gl"]
+display_cv = ["opencv", "cv-convert"]
+loader_prophesee = ["cxx", "cxx-build", "pkg-config"]
+loader_render = ["xz2", "rav1e", "tokio", "libredr-client"]

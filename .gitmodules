@@ -1,0 +1,3 @@
+[submodule "python/ev_ps_fcn/PS-FCN"]
+	path = python/ev_ps_fcn/PS-FCN
+	url = https://github.com/guanyingc/PS-FCN.git
