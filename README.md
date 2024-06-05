@@ -20,9 +20,9 @@ GIT_LFS_SKIP_SMUDGE=1 git clone https://codeberg.org/ybh1998/EventPS.git
 
 TODO
 
-### To use the device 3D printing files
+### To reproduce the device
 
-TODO
+The device 3D printing files are at `device/stl/`. The Arduino controller programs are at `device/arduino/`.
 
 ### The code is tested on the following platforms:
 
