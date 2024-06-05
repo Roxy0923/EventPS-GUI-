@@ -2,7 +2,7 @@
 [\[Project Page\]](https://www.ybh1998.space/eventps-real-time-photometric-stereo-using-an-event-camera/)
 [\[Codeberg Repo\]](https://codeberg.org/ybh1998/EventPS/)
 
-Official implementation for EventPS. This repo is still under construction. The code and data is ready, but needs
+Official implementation for EventPS. This repo is still under construction. The code and data are ready, but we need
 better document.
 
 ### To clone this project with data
@@ -17,12 +17,32 @@ GIT_LFS_SKIP_SMUDGE=1 git clone https://codeberg.org/ybh1998/EventPS.git
 ```
 
 ### To build this project from source code
+This project is written in Rust and Python. For for a complete build:
+```
+cargo install --features display_cv,display_gl,loader_render,loader_prophesee
+```
+The optional features are:
 
-TODO
+#### display_cv
+Display results on the Rust side with [OpenCV](https://opencv.org/). When enabled, `show_ls_ps = cv` is available.
+
+#### display_gl
+Display results on the Rust side with [OpenGL](https://www.opengl.org/). When enabled, `show_ls_ps = gl` is available.
+The default OpenGL rendering device must be the same as the OpenCL device. This option prevents data copying and has a
+better refresh rate.
+
+#### loader_render
+Rendering events for the Blobby, Sculpture, and DiLiGenT datasets. This option requires a running
+[LibreDR](https://codeberg.org/ybh1998/LibreDR/) server and worker.
+
+#### loader_prophesee
+Capturing event from [PROPHESEE](https://www.prophesee.ai/) camera in real-time. This option requires
+[OpenEB](https://github.com/prophesee-ai/openeb).
 
 ### To reproduce the device
 
-The device 3D printing files are at `device/stl/`. The Arduino controller programs are at `device/arduino/`.
+The device's 3D printing files are at `device/stl/`. The demo device is 3D printed with carbon fiber filament. The
+[Arduino](https://www.arduino.cc/) controller programs are at `device/arduino/`.
 
 ### The code is tested on the following platforms:
 
@@ -33,4 +53,4 @@ The device 3D printing files are at `device/stl/`. The Arduino controller progra
 
 Copyright (c) 2023-2024 Bohan Yu. All rights reserved.
 
-EventPS is free software licensed under GNU Affero General Public License version 3 or latter.
+EventPS is free software licensed under the GNU Affero General Public License, version 3 or any later version.
