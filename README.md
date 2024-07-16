@@ -9,17 +9,17 @@ better document.
 This repo uses [Git LFS](https://git-lfs.com/) to host data. To clone the code with data:
 ```
 git lfs install
-git clone https://codeberg.org/ybh1998/EventPS.git
+git clone --recursive https://codeberg.org/ybh1998/EventPS.git
 ```
 Or, to clone the code only:
 ```
-GIT_LFS_SKIP_SMUDGE=1 git clone https://codeberg.org/ybh1998/EventPS.git
+GIT_LFS_SKIP_SMUDGE=1 git clone --recursive https://codeberg.org/ybh1998/EventPS.git
 ```
 
 ### To build this project from source code
-This project is written in Rust and Python. For for a complete build:
+This project is written in Rust and Python. For a complete build:
 ```
-cargo install --features display_cv,display_gl,loader_render,loader_prophesee
+cargo install --path . --features display_cv,display_gl,loader_render,loader_prophesee
 ```
 The optional features are:
 
@@ -36,11 +36,18 @@ Rendering events for the Blobby, Sculpture, and DiLiGenT datasets. This option r
 [LibreDR](https://codeberg.org/ybh1998/LibreDR/) server and worker.
 
 #### loader_prophesee
-Capturing event from [PROPHESEE](https://www.prophesee.ai/) camera in real-time. This option requires
+Capturing events from a [PROPHESEE](https://www.prophesee.ai/) camera in real-time. This option requires
 [OpenEB](https://github.com/prophesee-ai/openeb).
 
-### To reproduce the device
+### To benchmark on the DiLiGenT dataset
+During building, `display_cv` and `loader_render` features are required for this benchmark. The pre-trained models are at `data/models/*.bin`. Download the `DiLiGenT.zip` from [DiLiGenT](https://sites.google.com/site/photometricstereodata/single) to `data/DiLiGenT.zip`. Run the following scripts:
+```
+bash ./scripts/diligent_convert.sh
+bash ./scripts/diligent_eval.sh
+```
+The results will be saved to `data/diligent/*/result.txt`.
 
+### To reproduce the device
 The device's 3D printing files are at `device/stl/`. The demo device is 3D printed with carbon fiber filament. The
 [Arduino](https://www.arduino.cc/) controller programs are at `device/arduino/`.
 
