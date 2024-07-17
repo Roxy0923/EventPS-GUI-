@@ -3,3 +3,7 @@ __pycache__
 /target
 /data/DiLiGenT.zip
 /data/diligent/
+/data/blobs_training/
+/data/blobs_eval/
+/data/sculptures_training/
+/data/sculptures_eval/

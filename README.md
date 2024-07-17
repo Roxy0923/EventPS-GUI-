@@ -47,6 +47,20 @@ bash ./scripts/diligent_eval.sh
 ```
 The results will be saved to `data/diligent/*/result.txt`.
 
+### To train deep-learning models
+Rendered data is required to train the models. The processed 3D object files are at `data/{blobs,sculpture}_processed/`. To render the training and evaluation data, make sure to have a working [LibreDR](https://codeberg.org/ybh1998/LibreDR/) server and worker, and run the following command:
+```
+ bash ./scripts/render.sh
+```
+To train the EventPS-FCN model, download the pre-trained original PS-FCN model, following the instructions in [PS-FCN](https://github.com/guanyingc/PS-FCN). File `python/ev_ps_fcn/PS-FCN/data/models/PS-FCN_B_S_32.pth.tar`is required. Then run the following command:
+```
+event_ps_train --ps-fcn-train python/ps_fcn_train.py
+```
+To train the EventPS-CNN model, run the following command:
+```
+event_ps_train --cnn-ps-train python/cnn_ps_train.py
+```
+
 ### To reproduce the device
 The device's 3D printing files are at `device/stl/`. The demo device is 3D printed with carbon fiber filament. The
 [Arduino](https://www.arduino.cc/) controller programs are at `device/arduino/`.
