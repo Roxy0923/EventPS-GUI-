@@ -9,7 +9,7 @@ use super::super::super::get_scan_pattern;
 
 pub async fn render_frame(
     i_frame: usize,
-    config_loader_render: HashMap<String, String>,
+    config_loader_render: &HashMap<String, String>,
     vertex_hash: Hash,
     transform_v: Array2<f32>,
     data_cache: DataCache) ->Result<(Array3<f32>, Array2<f32>)> {

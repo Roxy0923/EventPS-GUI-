@@ -49,6 +49,7 @@ async fn render_events(
   let mut i_queue_frame = 0;
   let data_cache = Default::default();
   let mut queue = VecDeque::new();
+  let config_loader_render = Arc::new(config_loader_render);
   let mut event_simulator = EventSimulator::new(&config_loader_render, arr_ev_sender)?;
   let n_rounds = config_loader_render["n_rounds"].parse::<usize>()?;
   let duration = config_loader_render["duration"].parse::<f32>()?;
@@ -92,25 +93,38 @@ async fn render_events(
     let obj_file = Path::new(&config_loader_render["obj_file"]);
     let mut geometry = Geometry::new();
     let vertex_hash = geometry.add_obj(obj_file, Array2::eye(4), Array2::eye(3), &data_cache)?;
-    (None, vertex_hash)
+    #[cfg(feature = "display_cv")]
+    let ret = (None::<(Mutex<videoio::VideoCapture>, Array3<f32>)>, vertex_hash);
+    #[cfg(not(feature = "display_cv"))]
+    let ret = (None::<((), ())>, vertex_hash);
+    ret
   };
   for i_frame in 0..n_frames {
     let (render_image, render_normal) = if let Some((video_capture, render_normal)) = &load_video {
-      let mut video_capture = video_capture.lock().unwrap();
-      let mut render_image = Mat::new_rows_cols_with_default(n_rows.try_into()?,
-                                                             n_cols.try_into()?,
-                                                             CV_8UC3,
-                                                             Default::default())?;
-      ensure!(video_capture.read(&mut render_image)?);
-      let render_image = Array3::try_from_cv(render_image)?.map(|x: &u8| (*x as f32 / 255.).powf(2.2));
-      (render_image.permuted_axes([2, 0, 1]), render_normal.to_owned())
+      #[cfg(feature = "display_cv")]
+      {
+        let mut video_capture = video_capture.lock().unwrap();
+        let mut render_image = Mat::new_rows_cols_with_default(n_rows.try_into()?,
+                                                              n_cols.try_into()?,
+                                                              CV_8UC3,
+                                                              Default::default())?;
+        ensure!(video_capture.read(&mut render_image)?);
+        let render_image = Array3::try_from_cv(render_image)?.map(|x: &u8| (*x as f32 / 255.).powf(2.2));
+        (render_image.permuted_axes([2, 0, 1]), render_normal.to_owned())
+      }
+      #[cfg(not(feature = "display_cv"))]
+      {
+        unreachable!();
+      }
     } else {
       while i_queue_frame < n_frames && i_queue_frame < i_frame + 2 * EV_BUFFER_N_JOBS {
-        let future_render_frame = render_frame(i_queue_frame,
-                                               config_loader_render.to_owned(),
-                                               vertex_hash.to_owned(),
-                                               transform_v.to_owned(),
-                                               data_cache.to_owned());
+        let vertex_hash = vertex_hash.to_owned();
+        let transform_v_clone = transform_v.to_owned();
+        let data_cache = data_cache.to_owned();
+        let config_loader_render = config_loader_render.clone();
+        let future_render_frame = async move {
+          render_frame(i_queue_frame, &config_loader_render, vertex_hash, transform_v_clone, data_cache).await
+        };
         queue.push_back(tokio::spawn(future_render_frame));
         transform_v = transform_v_frame.dot(&transform_v);
         i_queue_frame += 1;
