@@ -71,7 +71,7 @@ pub struct PSCL {
   gather_ps_fcn: Option<GatherPSFCNCNNPS>,
   gather_cnn_ps: Option<GatherPSFCNCNNPS>,
   #[cfg(feature = "display_gl")]
-  gl_window: Option<glfw::Window>,
+  gl_window: Option<glfw::PWindow>,
   #[cfg(feature = "display_gl")]
   gl_fbo: Option<gl::types::GLuint>,
   // Must be `Vec` to be `take` during drop
@@ -80,7 +80,7 @@ pub struct PSCL {
 
 impl PSCL {
   #[cfg(feature = "display_gl")]
-  fn gl_create_window(glfw: &mut glfw::Glfw, n_row: u16, n_col: u16, title: &str) -> Result<glfw::Window> {
+  fn gl_create_window(glfw: &mut glfw::Glfw, n_row: u16, n_col: u16, title: &str) -> Result<glfw::PWindow> {
     glfw.window_hint(glfw::WindowHint::Resizable(false));
     let window = glfw.create_window(n_col as u32, n_row as u32, title, glfw::WindowMode::Windowed);
     let Some((window, _)) = window else {
@@ -95,7 +95,7 @@ impl PSCL {
       n_col: u16,
       mut context_builder: ContextBuilder,
       program_builder: ProgramBuilder,
-      ) -> Result<(ProQue, Option<glfw::Window>, Option<gl::types::GLuint>, ocl::core::Mem)> {
+      ) -> Result<(ProQue, Option<glfw::PWindow>, Option<gl::types::GLuint>, ocl::core::Mem)> {
     use glfw::fail_on_errors;
     let mut glfw = glfw::init(fail_on_errors!()).unwrap();
     let mut gl_window = Self::gl_create_window(&mut glfw, n_row, n_col * 2, "ev_ps")?;
