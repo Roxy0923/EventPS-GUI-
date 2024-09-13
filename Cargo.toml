@@ -32,7 +32,7 @@ libredr-common = { version = "0.0.18", default-features = false }
 cxx = { version = "1", optional = true }
 gl = { version = "0.14", optional = true }
 xz2 = { version = "0.1", optional = true }
-glfw = { version = "0.57", optional = true }
+glfw = { version = "0.58", optional = true }
 opencv = {version = "0.85", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 rav1e = { version = "0.7", default-features = false, features = ["asm", "threading"], optional = true }
@@ -46,5 +46,5 @@ pkg-config = { version = "0.3", optional = true }
 [features]
 display_gl = ["glfw", "gl"]
 display_cv = ["opencv", "cv-convert"]
-loader_prophesee = ["cxx", "cxx-build", "pkg-config"]
+loader_prophesee = ["xz2", "cxx", "cxx-build", "pkg-config"]
 loader_render = ["xz2", "rav1e", "tokio", "libredr-client"]
