@@ -68,7 +68,7 @@ pub async fn render_frame(
     let (u, v) = (render[(3, i_row, i_col)], render[(4, i_row, i_col)]);
     let i_row = texture_resolution - 1 - (v * texture_resolution as f32).floor() as usize;
     let i_col = (u * texture_resolution as f32).floor() as usize;
-    return texture[(9, i_row, i_col)]
+    return texture[(9, i_row.clamp(0, texture_resolution - 1), i_col.clamp(0, texture_resolution - 1))]
   });
   Ok((render, render_roughness))
 }
