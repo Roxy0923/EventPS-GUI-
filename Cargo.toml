@@ -28,7 +28,7 @@ clap = { version = "4", features = ["derive"] }
 anyhow = { version = "1", features = ["backtrace"] }
 pyo3 = { version = "0.21", features = ["auto-initialize"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-libredr-common = { version = "0.0.18", default-features = false }
+libredr-common = { version = "0.0.19", default-features = false }
 cxx = { version = "1", optional = true }
 gl = { version = "0.14", optional = true }
 xz2 = { version = "0.1", optional = true }
@@ -37,7 +37,7 @@ opencv = {version = "0.85", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
 rav1e = { version = "0.7", default-features = false, features = ["asm", "threading"], optional = true }
 cv-convert = {version = "0.25", default-features = false, features = ["opencv_0-85", "ndarray_0-15"], optional = true }
-libredr-client = { version = "0.0.18", default-features = false, optional = true }
+libredr-client = { version = "0.0.19", default-features = false, optional = true }
 
 [build-dependencies]
 cxx-build = { version = "1", optional = true }

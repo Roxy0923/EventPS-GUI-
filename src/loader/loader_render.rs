@@ -53,7 +53,8 @@ async fn render_events(
   let mut event_simulator = EventSimulator::new(&config_loader_render, arr_ev_sender)?;
   let n_rounds = config_loader_render["n_rounds"].parse::<usize>()?;
   let duration = config_loader_render["duration"].parse::<f32>()?;
-  // Must contain only the first two. Because hypotrochoid is not periodic
+  // Must contain only the first two triggers. Because hypotrochoid is not periodic!
+  // The real time is interpolated by the first two triggers.
   event_simulator.add_triggers(Array1::linspace(0., duration / n_rounds as f32, 2).view())?;
   let mut video_writer = if config_loader_render["save_video"].is_empty() {
     None

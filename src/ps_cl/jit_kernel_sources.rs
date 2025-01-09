@@ -75,7 +75,7 @@ float3 get_light_dir(
     const uint timestamp_begin,
     const uint timestamp_end,
     const uint timestamp) {
-  const float time = fmod((float)((int)timestamp - (int)timestamp_begin) / (timestamp_end - timestamp_begin), 1.f);
+  const float time = (float)((int)timestamp - (int)timestamp_begin) / (timestamp_end - timestamp_begin);
   float3 light_dir;"###);
   sources.push_str(
   match config_ps["scan_pattern"].as_str() {
@@ -99,6 +99,7 @@ float3 get_light_dir(
   const float z = sqrt(1.f - pown(x, 2) - pown(y, 2));
   light_dir = (float3)(x, y, z);"###,
     "diligent" => r###"
+  const float time = fmod(time, 1.f);
   if (time < 7.f / 36.f) {
     const float ratio = time / (7.f / 36.f);
     light_dir = (1.f - ratio) * (float3)( 0.7794f, -0.4861f, 1.f) + ratio * (float3)( 0.7317f,  0.5074f, 1.f);
@@ -130,7 +131,7 @@ float3 get_null_vector(
   const float3 last_light_dir = get_light_dir(i_row, i_col, timestamp_begin, timestamp_end, timestamp_last);
   const float3 curr_light_dir = get_light_dir(i_row, i_col, timestamp_begin, timestamp_end, timestamp);
   if (polarity == 1) {
-    return curr_light_dir - EXP_EVENT_THRESHOLD * last_light_dir;
+    return EXP_EVENT_THRESHOLD * last_light_dir - curr_light_dir;
   }
   return EXP_EVENT_THRESHOLD * curr_light_dir - last_light_dir;
 }
