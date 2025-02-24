@@ -99,18 +99,18 @@ float3 get_light_dir(
   const float z = sqrt(1.f - pown(x, 2) - pown(y, 2));
   light_dir = (float3)(x, y, z);"###,
     "diligent" => r###"
-  const float time = fmod(time, 1.f);
-  if (time < 7.f / 36.f) {
-    const float ratio = time / (7.f / 36.f);
+  const float position = fmod(time, 1.f);
+  if (position < 7.f / 36.f) {
+    const float ratio = position / (7.f / 36.f);
     light_dir = (1.f - ratio) * (float3)( 0.7794f, -0.4861f, 1.f) + ratio * (float3)( 0.7317f,  0.5074f, 1.f);
-  } else if (time < 18.f / 36.f) {
-    const float ratio = (time - 7.f / 36.f) / (11.f / 36.f);
+  } else if (position < 18.f / 36.f) {
+    const float ratio = (position - 7.f / 36.f) / (11.f / 36.f);
     light_dir = (1.f - ratio) * (float3)( 0.7317f,  0.5074f, 1.f) + ratio * (float3)(-0.7421f,  0.5228f, 1.f);
-  } else if (time < 25.f / 36.f) {
-    const float ratio = (time - 18.f / 36.f) / (7.f / 36.f);
+  } else if (position < 25.f / 36.f) {
+    const float ratio = (position - 18.f / 36.f) / (7.f / 36.f);
     light_dir = (1.f - ratio) * (float3)(-0.7421f,  0.5228f, 1.f) + ratio * (float3)(-0.8072f, -0.4773f, 1.f);
   } else {
-    const float ratio = (time - 25.f / 36.f) / (11.f / 36.f);
+    const float ratio = (position - 25.f / 36.f) / (11.f / 36.f);
     light_dir = (1.f - ratio) * (float3)(-0.8072f, -0.4773f, 1.f) + ratio * (float3)( 0.7794f, -0.4861f, 1.f);
   }
   light_dir = normalize(light_dir);"###,
