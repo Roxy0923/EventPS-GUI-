@@ -172,7 +172,7 @@ fn process_chunk(
               writer.write_all(from_raw_parts(arr.as_ptr() as *const u8, arr.len() * size_of::<u32>()))?;
             }
           }
-          assert_eq!(ev_chunk_buffer_len, writer.position().try_into()?);
+          assert_eq!(writer.position().try_into(), Ok(ev_chunk_buffer_len));
         }
         kernel_process_chunk.set_arg(2, ev_chunk.timestamp_begin)?;
         kernel_process_chunk.set_arg(3, ev_chunk.timestamp_end)?;
