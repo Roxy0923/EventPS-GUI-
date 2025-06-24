@@ -1,18 +1,19 @@
 use std::boxed::Box;
 #[cfg(feature = "display_cv")]
 use std::sync::Mutex;
+use std::ffi::CString;
 use std::path::PathBuf;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::fs::{read_to_string, read_dir};
 use fastrand::Rng;
 use numpy::PyArray;
-use pyo3::prelude::*;
 use ndarray::prelude::*;
 use clap::{Args, Parser};
 use anyhow::{Error, Result};
 use tracing_panic::panic_hook;
 use tracing::{info, warn, error};
+use pyo3::{prelude::*, ffi::c_str};
 use tracing_subscriber::{fmt, EnvFilter, prelude::*};
 use libredr_common::add_config;
 use event_ps::{get_scan_pattern, default_config, py_load_normal, ps_cl::PSCL, loader::{Loader, EventReader}};
@@ -71,7 +72,11 @@ fn load_data(
   let time_per_bin = record_time / record_n_bin;
   let mut ps_cl = PSCL::new(n_row, n_col, &config_ps, arr_ev_chunk_receiver)?;
   let normal_gt_python = Python::with_gil(|py| {
-    py_load_normal(py, config_loader_render["save_normal"].as_str(), n_row as usize, n_col as usize)
+    let normal_gt_python = py_load_normal(py,
+                                          config_loader_render["save_normal"].as_str(),
+                                          n_row as usize,
+                                          n_col as usize)?;
+    Ok::<_, Error>(normal_gt_python.unbind())
   })?;
   let mut last_cd_counter = 0;
   let interval = Duration::from_micros(1000000);
@@ -99,7 +104,7 @@ fn load_data(
               let add_data_train = ps_fcn_python.getattr(py, "add_data_train")?;
               let buffer_python = PyArray::from_owned_array(py, buffer);
               let light_dir_python = PyArray::from_owned_array(py, light_dir);
-              let args = (buffer_python, light_dir_python, normal_gt_python.as_ref(py));
+              let args = (buffer_python, light_dir_python, normal_gt_python.bind(py));
               if let Err(e) = add_data_train.call1(py, args) {
                 error!("load_data: ps_fcn_python: {e:?}");
                 return Err(e);
@@ -121,7 +126,7 @@ fn load_data(
             Python::with_gil(|py| {
               let add_data_train = cnn_ps_python.getattr(py, "add_data_train")?;
               let buffer_python = PyArray::from_owned_array(py, buffer);
-              let args = (buffer_python, normal_gt_python.as_ref(py));
+              let args = (buffer_python, normal_gt_python.bind(py));
               if let Err(e) = add_data_train.call1(py, args) {
                 error!("load_data: cnn_ps_python: {e:?}");
                 return Err(e);
@@ -160,15 +165,17 @@ fn run() -> Result<()> {
     .init();
   let ps_fcn_python: Option<Py<PyModule>> = cli.group.ps_fcn_train.map(|ps_fcn_train| {
     Python::with_gil(|py| {
-      let code = read_to_string(&ps_fcn_train)?;
-      let module = PyModule::from_code(py, code.as_str(), ps_fcn_train.to_str().unwrap(), "__ev_ps_fcn_main__")?;
+      let code = CString::new(read_to_string(&ps_fcn_train)?)?;
+      let ps_fcn_train = CString::new(ps_fcn_train.to_str().unwrap())?;
+      let module = PyModule::from_code(py, code.as_c_str(), ps_fcn_train.as_c_str(), c_str!("__ev_ps_fcn_main__"))?;
       Ok::<_, Error>(module.into())
     })
   }).transpose()?;
   let cnn_ps_python: Option<Py<PyModule>> = cli.group.cnn_ps_train.map(|cnn_ps_train| {
     Python::with_gil(|py| {
-      let code = read_to_string(&cnn_ps_train)?;
-      let module = PyModule::from_code(py, code.as_str(), cnn_ps_train.to_str().unwrap(), "__ev_cnn_ps_main__")?;
+      let code = CString::new(read_to_string(&cnn_ps_train)?)?;
+      let cnn_ps_train = CString::new(cnn_ps_train.to_str().unwrap())?;
+      let module = PyModule::from_code(py, code.as_c_str(), cnn_ps_train.as_c_str(), c_str!("__ev_cnn_ps_main__"))?;
       Ok::<_, Error>(module.into())
     })
   }).transpose()?;

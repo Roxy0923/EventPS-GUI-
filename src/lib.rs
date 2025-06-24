@@ -11,13 +11,13 @@ use std::collections::HashMap;
 use std::slice::from_raw_parts;
 use nalgebra as na;
 use pyo3::prelude::*;
-use ndarray::prelude::*;
 #[cfg(feature = "display_cv")]
-use cv_convert::TryFromCv;
+use cv_convert::TryToCv;
+use ndarray::prelude::*;
 use anyhow::{Result, ensure};
 use numpy::{PyArray, PyArray3};
 #[cfg(feature = "display_cv")]
-use opencv::{prelude::*, highgui::{imshow, poll_key}};
+use opencv::{highgui::{imshow, poll_key}};
 
 pub fn map_image(image: ArrayView3<f32>) -> Result<Array3<f32>> {
   ensure!(image.shape().len() == 3);
@@ -27,7 +27,7 @@ pub fn map_image(image: ArrayView3<f32>) -> Result<Array3<f32>> {
 
 #[cfg(feature = "display_cv")]
 pub fn cv_show_image(title: &str, image: ArrayView3<f32>, cv_mutex: &'static Mutex<()>) -> Result<()> {
-  let image = Mat::try_from_cv(map_image(image)?.permuted_axes([1, 2, 0]).map(|x| (x * 255.) as u8))?;
+  let image = map_image(image)?.permuted_axes([1, 2, 0]).map(|x| (x * 255.) as u8).try_to_cv()?;
   let guard = cv_mutex.lock().expect("No task should panic");
   imshow(title, &image)?;
   poll_key()?;
@@ -49,7 +49,7 @@ pub fn map_normal(normal: ArrayView3<f32>) -> Result<Array3<f32>> {
 
 #[cfg(feature = "display_cv")]
 pub fn cv_show_normal(title: &str, normal: ArrayView3<f32>, cv_mutex: &'static Mutex<()>) -> Result<()> {
-  let normal = Mat::try_from_cv(map_normal(normal)?.permuted_axes([1, 2, 0]).map(|x| (x * 255.) as u8))?;
+  let normal = map_normal(normal)?.permuted_axes([1, 2, 0]).map(|x| (x * 255.) as u8).try_to_cv()?;
   let guard = cv_mutex.lock().expect("No task should panic");
   imshow(title, &normal)?;
   poll_key()?;
@@ -66,8 +66,12 @@ pub fn load_normal(path: &str, n_row: usize, n_col: usize) -> Result<Array3::<f3
   Ok(ArrayView3::from_shape((3, n_row, n_col), buf_slice)?.to_owned())
 }
 
-pub fn py_load_normal(py: Python, path: &str, n_row: usize, n_col: usize) -> Result<Py<PyArray3::<f32>>> {
-  Ok(PyArray::from_owned_array(py, load_normal(path, n_row, n_col)?).into())
+pub fn py_load_normal<'py>(
+    py: Python<'py>,
+    path: &str,
+    n_row: usize,
+    n_col: usize) -> Result<Bound<'py, PyArray3::<f32>>> {
+  Ok(PyArray::from_owned_array(py, load_normal(path, n_row, n_col)?))
 }
 
 pub fn get_scan_pattern(config: &HashMap<String, String>) -> Result<Box<dyn Fn(f32) -> na::Vector3<f32>>> {

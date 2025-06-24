@@ -37,10 +37,13 @@ Rendering events for the Blobby, Sculpture, and DiLiGenT datasets. This option r
 
 #### loader_prophesee
 Capturing events from a [PROPHESEE](https://www.prophesee.ai/) camera in real-time. This option requires
-[OpenEB](https://github.com/prophesee-ai/openeb).
+version 4.x of [OpenEB](https://github.com/prophesee-ai/openeb). Support for version 5.x is still WIP.
 
 ### To benchmark on the DiLiGenT dataset
-During building, `display_cv` and `loader_render` features are required for this benchmark. The pre-trained models are at `data/models/*.bin`. Download the `DiLiGenT.zip` from [DiLiGenT](https://sites.google.com/site/photometricstereodata/single) to `data/DiLiGenT.zip`. Run the following scripts:
+During building, `display_cv` and `loader_render` features are required for this benchmark. The pre-trained models are
+at `data/models/*.bin`. Download the `DiLiGenT.zip` from
+[DiLiGenT](https://sites.google.com/site/photometricstereodata/single) to `data/DiLiGenT.zip`. Run the following
+scripts:
 ```
 bash ./scripts/diligent_convert.sh
 bash ./scripts/diligent_eval.sh
@@ -48,11 +51,15 @@ bash ./scripts/diligent_eval.sh
 The results will be saved to `data/diligent/*/result.txt`.
 
 ### To train deep-learning models
-Rendered data is required to train the models. The processed 3D object files are at `data/{blobs,sculpture}_processed/`. To render the training and evaluation data, make sure to have a working [LibreDR](https://codeberg.org/ybh1998/LibreDR/) server and worker, and run the following command:
+Rendered data is required to train the models. The processed 3D object files are at `data/{blobs,sculpture}_processed/`.
+To render the training and evaluation data, make sure to have a working [LibreDR](https://codeberg.org/ybh1998/LibreDR/)
+server and worker, and run the following command:
 ```
  bash ./scripts/render.sh
 ```
-To train the EventPS-FCN model, download the pre-trained original PS-FCN model, following the instructions in [PS-FCN](https://github.com/guanyingc/PS-FCN). File `python/ev_ps_fcn/PS-FCN/data/models/PS-FCN_B_S_32.pth.tar`is required. Then run the following command:
+To train the EventPS-FCN model, download the pre-trained original PS-FCN model, following the instructions in
+[PS-FCN](https://github.com/guanyingc/PS-FCN). File `python/ev_ps_fcn/PS-FCN/data/models/PS-FCN_B_S_32.pth.tar`is
+required. Then run the following command:
 ```
 event_ps_train --ps-fcn-train python/ps_fcn_train.py
 ```

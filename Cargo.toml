@@ -14,30 +14,31 @@ panic = "abort"
 ctrlc = "3"
 ocl = "0.19"
 fastrand = "2"
-numpy = "0.21"
+numpy = "0.25"
 tracing = "0.1"
-ndarray = "0.15"
-nalgebra = "0.32"
+ndarray = "0.16"
+nalgebra = "0.33"
 aho-corasick = "1"
 configparser = "3"
-itertools = "0.13"
+itertools = "0.14"
 parking_lot = "0.12"
 tracing-panic = "0.1"
 crossbeam-channel = "0.5"
 clap = { version = "4", features = ["derive"] }
 anyhow = { version = "1", features = ["backtrace"] }
-pyo3 = { version = "0.21", features = ["auto-initialize"] }
+pyo3 = { version = "0.25", features = ["auto-initialize"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-libredr-common = { version = "0.0.19", default-features = false }
+libredr-common = { version = "0.0.21", default-features = false }
 cxx = { version = "1", optional = true }
 gl = { version = "0.14", optional = true }
 xz2 = { version = "0.1", optional = true }
-glfw = { version = "0.58", optional = true }
-opencv = {version = "0.85", optional = true }
+glfw = { version = "0.59", optional = true }
+# Limited by `cv-convert`
+opencv = {version = ">=0.63, <0.89", optional = true }
 tokio = { version = "1", features = ["full"], optional = true }
-rav1e = { version = "0.7", default-features = false, features = ["asm", "threading"], optional = true }
-cv-convert = {version = "0.25", default-features = false, features = ["opencv_0-85", "ndarray_0-15"], optional = true }
-libredr-client = { version = "0.0.19", default-features = false, optional = true }
+rav1e = { version = "0.8", default-features = false, features = ["asm", "threading"], optional = true }
+cv-convert = {version = "0.26", default-features = false, features = ["opencv", "ndarray"], optional = true }
+libredr-client = { version = "0.0.21", default-features = false, optional = true }
 
 [build-dependencies]
 cxx-build = { version = "1", optional = true }

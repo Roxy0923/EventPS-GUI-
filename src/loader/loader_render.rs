@@ -11,10 +11,10 @@ use std::mem::size_of;
 use std::slice::from_raw_parts;
 use std::collections::{VecDeque, HashMap};
 use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
+#[cfg(feature = "display_cv")]
+use cv_convert::TryToCv;
 use ndarray::prelude::*;
 use tracing::{info, error};
-#[cfg(feature = "display_cv")]
-use cv_convert::TryFromCv;
 use anyhow::{Result, bail};
 use crossbeam_channel::{Sender, Receiver};
 use tokio::{runtime::Runtime, task::JoinHandle};
@@ -110,7 +110,8 @@ async fn render_events(
                                                               CV_8UC3,
                                                               Default::default())?;
         ensure!(video_capture.read(&mut render_image)?);
-        let render_image = Array3::try_from_cv(render_image)?.map(|x: &u8| (*x as f32 / 255.).powf(2.2));
+        let render_image:ArrayBase<_, _> = render_image.try_to_cv()?;
+        let render_image = render_image.map(|x: &u8| (*x as f32 / 255.).powf(2.2));
         (render_image.permuted_axes([2, 0, 1]), render_normal.to_owned())
       }
       #[cfg(not(feature = "display_cv"))]

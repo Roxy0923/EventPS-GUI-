@@ -1,4 +1,5 @@
 use std::boxed::Box;
+use std::ffi::CString;
 use std::path::PathBuf;
 use std::process::abort;
 use std::f32::consts::PI;
@@ -12,8 +13,8 @@ use nalgebra as na;
 use ndarray::prelude::*;
 use tracing_panic::panic_hook;
 use tracing::{info, warn, error};
-use pyo3::{prelude::*, types::PyTuple};
 use anyhow::{Error, Result, bail, ensure};
+use pyo3::{prelude::*, types::PyTuple, ffi::c_str};
 use tracing_subscriber::{fmt, EnvFilter, prelude::*};
 use libredr_common::add_config;
 #[cfg(feature = "loader_render")]
@@ -37,8 +38,8 @@ fn normal_benchmark(normal: ArrayView3<f32>, normal_gt: ArrayView3<f32>) -> Resu
   ensure!(shape == normal_gt.shape());
   ensure!(shape.len() == 3);
   ensure!(shape[0] == 3);
-  let normal = normal.into_shape((3, shape[1] * shape[2]))?;
-  let normal_gt = normal_gt.into_shape((3, shape[1] * shape[2]))?;
+  let normal = normal.to_shape((3, shape[1] * shape[2]))?;
+  let normal_gt = normal_gt.to_shape((3, shape[1] * shape[2]))?;
   let iter = normal.axis_iter(Axis(1)).zip(normal_gt.axis_iter(Axis(1)));
   let (n_pixels, ang_err_sum) = iter.fold((0, 0.), |(n_pixels, ang_err_sum), (normal, normal_gt)| {
     let normal = na::Vector3::new(normal[0], normal[1], normal[2]);
@@ -54,10 +55,10 @@ fn normal_benchmark(normal: ArrayView3<f32>, normal_gt: ArrayView3<f32>) -> Resu
   Ok(())
 }
 
-fn py_add_data_eval(
-    py: Python,
+fn py_add_data_eval<'py>(
+    py: Python<'py>,
     py_module: &Py<PyModule>,
-    args: impl IntoPy<Py<PyTuple>>,
+    args: impl IntoPyObject<'py, Target = PyTuple>,
     method: &str) -> Result<()> {
   let add_data_eval = py_module.getattr(py, "add_data_eval")?;
   add_data_eval.call1(py, args).map(|ret| {
@@ -163,7 +164,7 @@ fn run() -> Result<()> {
     Ok::<_, Error>(if load_normal.is_empty() {
       py.None()
     } else {
-      event_ps::py_load_normal(py, load_normal, n_row as usize, n_col as usize)?.into_py(py)
+      event_ps::py_load_normal(py, load_normal, n_row as usize, n_col as usize)?.into_any().unbind()
     })
   })?;
   let config_ps = &config["ps"];
@@ -176,16 +177,18 @@ fn run() -> Result<()> {
   let code_path = config_ps["ps_fcn_python"].as_str();
   let ps_fcn_python: Option<Py<PyModule>> = (ps_fcn_per_n_bin > 0 && !code_path.is_empty()).then(|| {
     Python::with_gil(|py| {
-      let code = read_to_string(code_path)?;
-      let module = PyModule::from_code(py, code.as_str(), code_path, "__ev_ps_fcn_main__")?;
+      let code = CString::new(read_to_string(code_path)?)?;
+      let code_path = CString::new(code_path)?;
+      let module = PyModule::from_code(py, code.as_c_str(), code_path.as_c_str(), c_str!("__ev_ps_fcn_main__"))?;
       Ok::<_, Error>(module.into())
     })
   }).transpose()?;
   let code_path = config_ps["cnn_ps_python"].as_str();
   let cnn_ps_python: Option<Py<PyModule>> = (cnn_ps_per_n_bin > 0 && !code_path.is_empty()).then(|| {
     Python::with_gil(|py| {
-      let code = read_to_string(code_path)?;
-      let module = PyModule::from_code(py, code.as_str(), code_path, "__ev_cnn_ps_main__")?;
+      let code = CString::new(read_to_string(code_path)?)?;
+      let code_path = CString::new(code_path)?;
+      let module = PyModule::from_code(py, code.as_c_str(), code_path.as_c_str(), c_str!("__ev_cnn_ps_main__"))?;
       Ok::<_, Error>(module.into())
     })
   }).transpose()?;
@@ -225,7 +228,7 @@ fn run() -> Result<()> {
             Python::with_gil(|py| {
               let buffer_python = PyArray::from_owned_array(py, buffer);
               let light_dir_python = PyArray::from_owned_array(py, light_dir);
-              let args = (buffer_python, light_dir_python, normal_gt_python.as_ref(py), &config_ps["mask"]);
+              let args = (buffer_python, light_dir_python, normal_gt_python.bind(py), &config_ps["mask"]);
               py_add_data_eval(py, ps_fcn_python, args, "Event-PS-FCN")
             })?;
           }
@@ -242,7 +245,7 @@ fn run() -> Result<()> {
           if let Some(cnn_ps_python) = &cnn_ps_python {
             Python::with_gil(|py| {
               let buffer_python = PyArray::from_owned_array(py, buffer);
-              let args = (buffer_python, normal_gt_python.as_ref(py), &config_ps["mask"]);
+              let args = (buffer_python, normal_gt_python.bind(py), &config_ps["mask"]);
               py_add_data_eval(py, cnn_ps_python, args, "Event-CNN-PS")
             })?;
           }
