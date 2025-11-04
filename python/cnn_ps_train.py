@@ -49,8 +49,9 @@ def add_data_train(buffer, normal_gt):
   normal_pred[:, mask] = normal_pred_gather.T
   normal_pred_show = np.clip(0.5 + 0.5 * map_normal(normal_pred.cpu().numpy()).transpose(1, 2, 0), 0., 1.)
   cv.imshow("normal_pred", (normal_pred_show * 255.).astype(np.uint8))
-  cv.pollKey()
-  print("iter", I_ITER, "item_sum", item_sum, "loss_mean", loss_sum / (item_sum + 1e-6))
+  cv.waitKey(1)  # Changed from pollKey() to waitKey(1) for proper GUI display
+  print("iter", I_ITER, "item_sum", item_sum, "loss_mean", loss_sum / (item_sum + 1e-6), flush=True)
+  sys.stdout.flush()  # Force immediate output
   if I_ITER % 300 == 0:
     state_dict = {
       "iter": I_ITER,
@@ -75,4 +76,3 @@ if __name__ == "__ev_cnn_ps_main__":
   OPTIMIZER = torch.optim.Adam(NET.parameters(), lr=1e-5, amsgrad=True)
   SCHEDULER = torch.optim.lr_scheduler.MultiStepLR(OPTIMIZER, milestones=[1000], gamma=0.1)
   I_ITER = 0
-

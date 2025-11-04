@@ -2,6 +2,8 @@ import os
 import sys
 import math
 import cv2 as cv
+cv.setNumThreads(0)
+# GUI enabled for Python side
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -29,6 +31,7 @@ def add_data_eval(buffer, normal_gt, mask):
     mask = torch.ones(buffer.shape[3:], dtype=torch.bool, device=DEVICE)
   if normal_gt is not None:
     # print("normal_gt", normal_gt.shape, normal_gt.dtype)
+    # GUI enabled - Python side
     normal_show = np.clip(0.5 + 0.5 * map_normal(normal_gt).transpose(1, 2, 0), 0., 1.)
     cv.imshow("normal_gt", (normal_show * 255.).astype(np.uint8))
     mask = (normal_gt[2, :, :] > 1e-3)
@@ -36,15 +39,15 @@ def add_data_eval(buffer, normal_gt, mask):
     normal_gt = normal_gt.reshape(3, n_col, down_sample, n_row, down_sample).mean(dim=(2, 4))
   mask = mask.reshape(n_col, down_sample, n_row, down_sample).all(3).all(1)
   n_pixels = mask.sum().item()
-  # buffer_show = buffer.reshape(*buffer.shape[:3], buffer.shape[3] // 32, 32, buffer.shape[4] // 32, 32)
-  # buffer_show = buffer_show.mean(axis=(4, 6)).transpose(3, 1, 4, 2, 0)
-  # buffer_show = buffer_show.reshape(buffer_show.shape[0] * buffer_show.shape[1],
-  #                                   buffer_show.shape[2] * buffer_show.shape[3],
-  #                                   buffer_show.shape[4])
-  # buffer_show = buffer_show.reshape(buffer_show.shape[0] // 2, 2, buffer_show.shape[1] // 2, 2, buffer_show.shape[2])
-  # buffer_show = buffer_show.sum(axis=(1, 3))
-  # buffer_show = np.clip(0.5 + 10. * buffer_show, 0., 1.) ** (1. / 2.2)
-  # cv.imshow("buffer_show", buffer_show)
+  buffer_show = buffer.reshape(*buffer.shape[:3], buffer.shape[3] // 32, 32, buffer.shape[4] // 32, 32)
+  buffer_show = buffer_show.mean(axis=(4, 6)).transpose(3, 1, 4, 2, 0)
+  buffer_show = buffer_show.reshape(buffer_show.shape[0] * buffer_show.shape[1],
+                                    buffer_show.shape[2] * buffer_show.shape[3],
+                                    buffer_show.shape[4])
+  buffer_show = buffer_show.reshape(buffer_show.shape[0] // 2, 2, buffer_show.shape[1] // 2, 2, buffer_show.shape[2])
+  buffer_show = buffer_show.sum(axis=(1, 3))
+  buffer_show = np.clip(0.5 + 10. * buffer_show, 0., 1.) ** (1. / 2.2)
+  cv.imshow("buffer_show", buffer_show)
   buffer = torch.tensor(buffer, dtype=torch.float32, device=DEVICE)
   buffer = buffer.reshape(*buffer.shape[:3], n_col, down_sample, n_row, down_sample).mean(dim=(4, 6))
   buffer = buffer[:, :, :, mask].permute(3, 0, 1, 2)
@@ -59,9 +62,10 @@ def add_data_eval(buffer, normal_gt, mask):
       slice_batch = slice(i_batch * BATCH_SIZE, (i_batch + 1) * BATCH_SIZE)
       normal_pred_gather[slice_batch, :] = normal
   normal_pred[:, mask] = normal_pred_gather.T
+  # GUI enabled - Python side showing CNN-PS results
   normal_pred_show = np.clip(0.5 + 0.5 * map_normal(normal_pred.cpu().numpy()).transpose(1, 2, 0), 0., 1.)
-  cv.imshow("normal_pred_cnn_ps", (normal_pred_show * 255.).astype(np.uint8))
-  cv.pollKey()
+  cv.imshow("normal_pred", (normal_pred_show * 255.).astype(np.uint8))
+  cv.waitKey(1)  # 和训练时一样用waitKey(1)
   if normal_gt is not None:
     normal_gt = normal_gt[:, mask].T
     ang_err_mean = torch.arccos((normal_pred_gather * normal_gt).sum(dim=1)).mean().item() / math.pi * 180
@@ -74,11 +78,14 @@ print("__name__", __name__)
 if __name__ == "__ev_cnn_ps_main__":
   SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
   print("SCRIPT_DIR", SCRIPT_DIR)
+  print("DISPLAY:", os.environ.get('DISPLAY', 'NOT SET'), flush=True)
   path_last = sys.path
   sys.path.insert(0, SCRIPT_DIR)
   from ev_cnn_ps import EV_CNN_PS
   sys.path = path_last
   DEVICE = torch.device("cuda:0")
   NET = EV_CNN_PS().to(DEVICE).eval()
-  NET.load_state_dict(torch.load("data/models/ev_cnn_ps.bin")["model_state_dict"])
+  NET.load_state_dict(torch.load("data/models/ev_cnn_ps_official_download.bin")["model_state_dict"])
+  print("Loaded model: ev_cnn_ps_official_download.bin", flush=True)
+  print("GUI enabled: normal_gt_CNN, buffer_show_CNN, normal_pred_CNN-PS", flush=True)
 

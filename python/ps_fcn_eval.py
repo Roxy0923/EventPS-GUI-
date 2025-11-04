@@ -3,6 +3,8 @@ import sys
 import math
 import torch
 import cv2 as cv
+cv.setNumThreads(0)
+# os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # 注释掉以启用GUI
 import numpy as np
 
 def map_normal(normal):
@@ -54,7 +56,7 @@ def add_data_eval(buffer, light_dir, normal_gt, mask):
   normal_show = map_normal(normal[0, ...].cpu().numpy()).transpose(1, 2, 0)
   normal_show = np.clip(0.5 + 0.5 * normal_show, 0., 1.)
   cv.imshow("normal_pred_ps_fcn", (normal_show * 255.).astype(np.uint8))
-  cv.pollKey()
+  cv.waitKey(1)  # 改为waitKey(1)以正确显示GUI
   if normal_gt is not None:
     normal = normal[0, :, mask]
     normal_gt = normal_gt[0, :, mask]
@@ -73,4 +75,5 @@ if __name__ == "__ev_ps_fcn_main__":
   sys.path = path_last
   DEVICE = torch.device("cuda:0")
   NET = EV_PS_FCN().to(DEVICE).eval()
-  NET.load_state_dict(torch.load("data/models/ev_ps_fcn.bin")["model_state_dict"])
+  NET.load_state_dict(torch.load("data/models/ev_ps_fcn_020000.bin")["model_state_dict"])
+  print("Loaded model: ev_ps_fcn_020000.bin", flush=True)

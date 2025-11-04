@@ -2,8 +2,27 @@ __pycache__
 /Cargo.lock
 /target
 /data/DiLiGenT.zip
+/data/DiLiGenT-MV.zip
 /data/diligent/
+/data/diligent_mv_training/
 /data/blobs_training/
 /data/blobs_eval/
 /data/sculptures_training/
 /data/sculptures_eval/
+/data/blobs_processed/
+/data/sculptures_processed/
+/data/prophesee/
+/data/models/*.bin
+/data/models_backup/
+/venv/
+*.log
+*.pid
+/logs/
+/eval_report/
+
+# 排除所有数据文件（LFS大文件）
+/data/blobs_processed/
+/data/sculptures_processed/
+/data/prophesee/
+/device/stl/*.xz
+/device/stl/*.png

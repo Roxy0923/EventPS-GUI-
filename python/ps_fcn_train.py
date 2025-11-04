@@ -1,26 +1,40 @@
 import os
 import sys
+import gc
 import torch
 import cv2 as cv
+cv.setNumThreads(0)
+# os.environ['QT_QPA_PLATFORM'] = 'offscreen'  # 注释掉以启用GUI
 import numpy as np
 import torch.nn as nn
 from torch.nn.init import kaiming_normal_
 
 NOISE_STD = 0.1
+MAX_ITERATIONS = 20001  # 最大迭代次数
 
 def map_normal(normal):
   return np.stack([normal[2], -normal[0], normal[1]], axis=0)
 
 def add_data_train(buffer, light_dir, normal_gt):
   global I_ITER
+  
+  # 检查是否达到最大迭代次数
+  if I_ITER >= MAX_ITERATIONS:
+    print(f"\n{'='*60}")
+    print(f"✓ 训练完成！已达到最大迭代次数: {MAX_ITERATIONS}")
+    print(f"{'='*60}\n")
+    sys.exit(0)
+  
   # print("buffer", buffer.shape, buffer.dtype, buffer.min(), buffer.max())
   # print("normal_gt", normal_gt.shape, normal_gt.dtype)
   buffer += np.random.normal(0.0, NOISE_STD, buffer.shape)
-  normal_gt_show = np.clip(0.5 + 0.5 * map_normal(normal_gt).transpose(1, 2, 0), 0., 1.)
-  cv.imshow("normal_gt", (normal_gt_show * 255.).astype(np.uint8))
-  for i in range(4):
-    buffer_show = np.clip(0.5 + 0.5 * buffer[i * 4, ...].transpose(1, 2, 0), 0., 1.)
-    cv.imshow("buffer_"+str(i * 4), (buffer_show * 255.).astype(np.uint8))
+  # 降低GUI更新频率：每10次迭代更新一次，减少内存压力
+  if I_ITER % 10 == 0:
+    normal_gt_show = np.clip(0.5 + 0.5 * map_normal(normal_gt).transpose(1, 2, 0), 0., 1.)
+    cv.imshow("normal_gt", (normal_gt_show * 255.).astype(np.uint8))
+    for i in range(4):
+      buffer_show = np.clip(0.5 + 0.5 * buffer[i * 4, ...].transpose(1, 2, 0), 0., 1.)
+      cv.imshow("buffer_"+str(i * 4), (buffer_show * 255.).astype(np.uint8))
   # n_bin = 16
   # buffer = buffer[:n_bin, ...]
   n_bin = buffer.shape[0]
@@ -38,23 +52,37 @@ def add_data_train(buffer, light_dir, normal_gt):
   loss = 1 - torch.sum(normal_gt * normal, dim=1)
   # loss = torch.sum((normal_gt - normal).abs(), dim=1)
   loss_mean = loss[mask].mean()
-  print("iter", I_ITER, "loss", loss.shape, "loss_mean", loss_mean.item())
+  print("iter", I_ITER, "loss", loss.shape, "loss_mean", loss_mean.item(), flush=True)
+  sys.stdout.flush()  # 强制立即输出
   loss_mean.backward()
   OPTIMIZER.step()
   SCHEDULER.step()
   # print("normal", normal.shape, normal.min(), normal.max())
   normal = normal.detach()
   normal[~torch.stack([mask] * 3, dim=1)] = 0.0
-  normal_show = np.clip(0.5 + 0.5 * map_normal(normal[0, ...].cpu().numpy()).transpose(1, 2, 0), 0., 1.)
-  cv.imshow("normal", (normal_show * 255.).astype(np.uint8))
-  cv.pollKey()
-  if I_ITER % 3000 == 0:
+  # 降低GUI更新频率：每10次迭代更新一次
+  if I_ITER % 10 == 0:
+    normal_show = np.clip(0.5 + 0.5 * map_normal(normal[0, ...].cpu().numpy()).transpose(1, 2, 0), 0., 1.)
+    cv.imshow("normal", (normal_show * 255.).astype(np.uint8))
+    cv.waitKey(1)
+  # 定期清理资源，避免累积导致崩溃
+  if I_ITER % 500 == 0:
+    # 清理CUDA缓存
+    torch.cuda.empty_cache()
+    # 强制Python垃圾回收
+    gc.collect()
+  
+  # 每2000次迭代保存一次模型
+  if I_ITER % 2000 == 0:
     state_dict = {
       "iter": I_ITER,
       "model_state_dict": NET.state_dict(),
       "optimizer_state_dict": OPTIMIZER.state_dict(),
     }
     torch.save(state_dict, f"data/models/ev_ps_fcn_{I_ITER:06d}.bin")
+    # 保存后也清理一次
+    torch.cuda.empty_cache()
+    gc.collect()
   I_ITER += 1
 
 print("__package__", __package__)
@@ -94,5 +122,30 @@ if __name__ == "__ev_ps_fcn_main__":
     {"params": NET.regressor.parameters(), "lr": 1e-6},
   ]
   OPTIMIZER = torch.optim.Adam(params, amsgrad=True)
-  SCHEDULER = torch.optim.lr_scheduler.MultiStepLR(OPTIMIZER, milestones=[10000], gamma=0.1)
+  # 每3000次衰减一次，共衰减3次后保持稳定
+  SCHEDULER = torch.optim.lr_scheduler.MultiStepLR(OPTIMIZER, milestones=[3000, 6000, 9000], gamma=0.5)
+  
+  # 尝试从最新checkpoint恢复训练
   I_ITER = 0
+  import glob
+  checkpoints = sorted(glob.glob("data/models/ev_ps_fcn_*.bin"))
+  if checkpoints:
+    latest_checkpoint = checkpoints[-1]
+    print(f"\n{'='*60}")
+    print(f"发现checkpoint: {latest_checkpoint}")
+    try:
+      checkpoint = torch.load(latest_checkpoint)
+      I_ITER = checkpoint["iter"]
+      NET.load_state_dict(checkpoint["model_state_dict"])
+      OPTIMIZER.load_state_dict(checkpoint["optimizer_state_dict"])
+      print(f"✓ 成功恢复训练，从第 {I_ITER} 次迭代继续")
+      print(f"{'='*60}\n")
+    except Exception as e:
+      print(f"⚠ 无法加载checkpoint: {e}")
+      print(f"从头开始训练...")
+      print(f"{'='*60}\n")
+      I_ITER = 0
+  else:
+    print(f"\n{'='*60}")
+    print(f"未找到checkpoint，从头开始训练")
+    print(f"{'='*60}\n")
